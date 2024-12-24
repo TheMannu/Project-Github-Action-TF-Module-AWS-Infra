@@ -1,0 +1,53 @@
+name: Terraform Apply
+
+on:
+  # push:
+  #   branches:
+  #     - master
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the deployment repo (TF_GitHub_Action_CI-CD)
+      - name: Checkout deployment repo
+        uses: actions/checkout@v3
+
+      # Checkout the Terraform module repo (Project-TF-Modules-AWS-infra)
+      - name: Checkout Terraform module repo
+        uses: actions/checkout@v3
+        with:
+          repository: TheMannu/Project-TF-Modules-AWS-infra
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: terraform-module
+
+      # Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      # Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      # Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform-module
+
+      # Terraform Plan (optional but recommended)
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: ./terraform-module
+
+      # Apply Terraform
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+        working-directory: ./terraform-module
